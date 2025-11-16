@@ -3,9 +3,6 @@
 ## Overview
 The Inter-City Cab Management Portal is a backend system designed to help administrators efficiently manage inter-city cab services. This system includes features for cab registration, city onboarding, cab state management, booking, and insights into cab activity.
 
-## Postman Collection
-[Postman Collection Link](https://www.postman.com/descent-module-geologist-12692523/public-wspc/collection/80l8dkw/cab-management?action=share&creator=28324709)
-
 ## Features
 
 ### 1. Cab Registration
