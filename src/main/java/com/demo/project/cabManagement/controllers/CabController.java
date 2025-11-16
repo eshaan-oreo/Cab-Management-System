@@ -19,7 +19,7 @@ public class CabController {
 
     @PostMapping("")
     public ResponseEntity<String> registerCab(@RequestBody RegisterCabInput registerCabInput) {
-        dlog.info("Registering a new cab with input={}", registerCabInput);
+        log.info("Registering a new cab with input={}", registerCabInput);
         try{
             cabService.registerCabs(registerCabInput);
         } catch (RuntimeException e) {
