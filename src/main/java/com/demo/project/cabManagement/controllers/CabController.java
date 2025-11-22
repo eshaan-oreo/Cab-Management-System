@@ -29,7 +29,7 @@ public class CabController {
     }
 
     @PutMapping("")
-    public ResponseEntity<String> updateCab(@RequestBody UpdateCab updateCab) {
+    public ResponseEntity<String> updateCab(@RequestBody RegisterCab updateCab) {
         log.info("Updating cabs with input={}", updateCab);
         try{
             cabService.updateCab(updateCab);

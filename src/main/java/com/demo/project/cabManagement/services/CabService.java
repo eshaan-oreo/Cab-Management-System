@@ -36,32 +36,37 @@ public class CabService {
         cabRepo.saveAllAndFlush(cabList);
     }
 
-    public void updateCab(UpdateCab updateCab) {
+    public void updateCab(RegisterCab updateCab) {
         if (!cabRepo.existsById(updateCab.getCabId())) {
             throw new RuntimeException("Cab with the given cab id doesn't exist");
         }
         log.info("Updating cab with input={}", updateCab);
         String cabId = updateCab.getCabId();
         log.info("Fetching cab={} from cabDb", cabId);
-        Cab cab = cabRepo.getReferenceById(cabId);
-        if (UpdateType.CITY.equals(updateCab.getUpdateType())) {
-            if (!cityService.ifCityExists(updateCab.getCityId())) {
-                throw new RuntimeException("City ID doesn't exist");
-            }
-            cab.setCurrentCityId(updateCab.getCityId());
-        } else {
-            if (cab.getCabState().equalsIgnoreCase(updateCab.getCabState().toString())) {
-                throw new RuntimeException("Cab state is already " + cab.getCabState());
-            }
-            if (CabState.ON_TRIP.toString().equalsIgnoreCase(cab.getCabState())) {
-                // if the cab's state changes from ON_TRIP to IDLE, update the last idle time
-                cab.setLastIdleTime(System.currentTimeMillis());
-            }
-            cab.setCabState(updateCab.getCabState().toString());
-            cabHistoryService.setHistory(cab);
+        Cab currentCab = cabRepo.getReferenceById(cabId);
+        updateCity(updateCab, currentCab);
+        updateState(updateCab, currentCab);
+        cabRepo.saveAndFlush(currentCab);
+        log.info("Saved cab={} in DB", currentCab);
+    }
+
+    private void updateState(RegisterCab updateCab, Cab cab) {
+        if (cab.getCabState().equalsIgnoreCase(updateCab.getCabState().toString())) {
+            throw new RuntimeException("Cab state is already " + cab.getCabState());
         }
-        cabRepo.saveAndFlush(cab);
-        log.info("Saved cab={} in DB", cab);
+        if (CabState.ON_TRIP.toString().equalsIgnoreCase(cab.getCabState())) {
+            // if the cab's state changes from ON_TRIP to IDLE, update the last idle time
+            cab.setLastIdleTime(System.currentTimeMillis());
+        }
+        cab.setCabState(updateCab.getCabState().toString());
+        cabHistoryService.setHistory(cab);
+    }
+
+    private void updateCity(RegisterCab updateCab, Cab cab) {
+        if (!cityService.ifCityExists(updateCab.getCityId())) {
+            throw new RuntimeException("City ID doesn't exist");
+        }
+        cab.setCurrentCityId(updateCab.getCityId());
     }
 
     public String bookCab(BookCabInput bookCabInput) {
