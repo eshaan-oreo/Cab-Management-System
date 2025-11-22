@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,17 +25,26 @@ public class CabService {
     private final CityService cityService;
     private final CabHistoryService cabHistoryService;
 
-    public void registerCabs(RegisterCabInput registerCabInput) {
+    public AtomicInteger registerCabs(RegisterCabInput registerCabInput) {
+        AtomicInteger successCnt = new AtomicInteger();
         log.info("Registering new cabs with input={}", registerCabInput);
         List<RegisterCab> cabs = registerCabInput.getRegisterCabList();
         List<Cab> cabList = cabs.stream()
                 .map(registerCab -> {
+                    if (cabRepo.existsById(registerCab.getCabId())) {
+                        log.error("Cab with the given cab id already exists, use update cab to update details");
+                        return null;
+                    }
+                    successCnt.incrementAndGet();
                     Cab cab = MapperUtils.registerCabToCab(registerCab);
                     log.info("Saving cab={} in DB", cab);
                     cabRepo.saveAndFlush(cab);
                     return cab;
-                }).toList();
+                })
+                .filter(Objects::nonNull)
+                .toList();
         cabRepo.saveAllAndFlush(cabList);
+        return successCnt;
     }
 
     public void updateCab(RegisterCab updateCab) {

@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @RestController
 @RequestMapping("/v1/cab")
 @Slf4j
@@ -20,12 +22,13 @@ public class CabController {
     @PostMapping("")
     public ResponseEntity<String> registerCab(@RequestBody RegisterCabInput registerCabInput) {
         log.info("Registering a new cab with input={}", registerCabInput);
+        AtomicInteger successCnt = new AtomicInteger();
         try{
-            cabService.registerCabs(registerCabInput);
+            successCnt = cabService.registerCabs(registerCabInput);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unable to register cabs due to error: " + e.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.OK).body("Cabs registered successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(successCnt + " Cabs registered successfully out of " + registerCabInput.getRegisterCabList().size());
     }
 
     @PutMapping("")
