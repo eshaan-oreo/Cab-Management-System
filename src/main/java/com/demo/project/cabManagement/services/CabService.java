@@ -27,33 +27,33 @@ public class CabService {
         log.info("Registering new cabs with input={}", registerCabInput);
         List<RegisterCab> cabs = registerCabInput.getRegisterCabList();
         List<Cab> cabList = cabs.stream()
-                            .map(registerCab -> {
-                                Cab cab = MapperUtils.registerCabToCab(registerCab);
-                                log.info("Saving cab={} in DB", cab);
-                                cabRepo.saveAndFlush(cab);
-                                return cab;
-                            }).toList();
+                .map(registerCab -> {
+                    Cab cab = MapperUtils.registerCabToCab(registerCab);
+                    log.info("Saving cab={} in DB", cab);
+                    cabRepo.saveAndFlush(cab);
+                    return cab;
+                }).toList();
         cabRepo.saveAllAndFlush(cabList);
     }
 
     public void updateCab(UpdateCab updateCab) {
-        if(!cabRepo.existsById(updateCab.getCabId())){
+        if (!cabRepo.existsById(updateCab.getCabId())) {
             throw new RuntimeException("Cab with the given cab id doesn't exist");
         }
         log.info("Updating cab with input={}", updateCab);
         String cabId = updateCab.getCabId();
         log.info("Fetching cab={} from cabDb", cabId);
         Cab cab = cabRepo.getReferenceById(cabId);
-        if(UpdateType.CITY.equals(updateCab.getUpdateType())){
-            if(!cityService.ifCityExists(updateCab.getCityId())){
+        if (UpdateType.CITY.equals(updateCab.getUpdateType())) {
+            if (!cityService.ifCityExists(updateCab.getCityId())) {
                 throw new RuntimeException("City ID doesn't exist");
             }
             cab.setCurrentCityId(updateCab.getCityId());
-        }else{
-            if(cab.getCabState().equalsIgnoreCase(updateCab.getCabState().toString())){
+        } else {
+            if (cab.getCabState().equalsIgnoreCase(updateCab.getCabState().toString())) {
                 throw new RuntimeException("Cab state is already " + cab.getCabState());
             }
-            if(cab.getCabState().equalsIgnoreCase(CabState.ON_TRIP.toString())){
+            if (CabState.ON_TRIP.toString().equalsIgnoreCase(cab.getCabState())) {
                 // if the cab's state changes from ON_TRIP to IDLE, update the last idle time
                 cab.setLastIdleTime(System.currentTimeMillis());
             }
@@ -71,20 +71,20 @@ public class CabService {
              of them.
              Now change the cab's status to ON_TRIP and currentCityId to null
          */
-        if(!cityService.ifCityExists(bookCabInput.getFromCityId())){
+        if (!cityService.ifCityExists(bookCabInput.getFromCityId())) {
             throw new RuntimeException("From City ID doesn't exist");
         }
-        if(!cityService.ifCityExists(bookCabInput.getToCityId())){
+        if (!cityService.ifCityExists(bookCabInput.getToCityId())) {
             throw new RuntimeException("To City ID doesn't exist");
         }
         List<Cab> cabList = cabRepo.fetchCabs(bookCabInput.getFromCityId(), "IDLE");
 
         Cab earliestCab = getEarliestIdleCab(cabList);
-        if(earliestCab == null) {
+        if (earliestCab == null) {
             throw new RuntimeException("No cabs available at this time");
         }
         earliestCab.setCabState(CabState.ON_TRIP.toString());
-        earliestCab.setCurrentCityId(null);
+        earliestCab.setCurrentCityId(bookCabInput.getFromCityId());
         cabRepo.saveAndFlush(earliestCab);
         cabHistoryService.setHistory(earliestCab);
         return earliestCab.getId();
@@ -100,16 +100,16 @@ public class CabService {
                 .filter(cab -> cab.getLastIdleTime() == minLastIdleTime)
                 .toList();
 
-        if(!mostIdleTimeCabs.isEmpty()){
+        if (!mostIdleTimeCabs.isEmpty()) {
             Random random = new Random();
             return mostIdleTimeCabs.get(random.nextInt(mostIdleTimeCabs.size()));
         }
         return null;
     }
 
-    public long getIdleTime(DurationInput durationInput){
+    public long getIdleTime(DurationInput durationInput) {
         String cabId = durationInput.getCabId();
-        if(!cabRepo.existsById(cabId)){
+        if (!cabRepo.existsById(cabId)) {
             throw new RuntimeException("Cab with id " + cabId + " does not exist");
         }
         List<CabHistory> cabHistoryList = cabHistoryService.getAllHistoryByCabIdWithTimeGreaterThanStartTimeAndLessThanEndTime(cabId, durationInput.getStartTime(), durationInput.getEndTime());
@@ -117,18 +117,18 @@ public class CabService {
         long lastTimeChange = durationInput.getStartTime();
         long totalIdleTime = 0;
         CabState lastCabState = CabState.IDLE;
-        for(int i=0; i<cabHistoryList.size(); i++){
+        for (int i = 0; i < cabHistoryList.size(); i++) {
             CabHistory cabHistory = cabHistoryList.get(i);
-            if(cabHistory.getCabToState().equals(CabState.IDLE)){
+            if (cabHistory.getCabToState().equals(CabState.IDLE)) {
                 lastCabState = CabState.IDLE;
-            }else{
+            } else {
                 lastCabState = CabState.ON_TRIP;
-                totalIdleTime += cabHistory.getTime()-lastTimeChange;
+                totalIdleTime += cabHistory.getTime() - lastTimeChange;
             }
             lastTimeChange = cabHistory.getTime();
         }
-        if(lastCabState == CabState.IDLE){
-            totalIdleTime += durationInput.getEndTime()-lastTimeChange;
+        if (lastCabState == CabState.IDLE) {
+            totalIdleTime += durationInput.getEndTime() - lastTimeChange;
         }
         return totalIdleTime;
     }

@@ -17,7 +17,7 @@ public class CityService {
     public City registerCity(RegisterCity registerCity) {
         log.info("Registering new cities with input={}", registerCity);
         if(cityRepo.existsById(registerCity.getCityId())){
-            throw new RuntimeException("Cab with the given cab id already exists");
+            throw new RuntimeException("City with the given city id already exists");
         }
         City city = MapperUtils.registerCityToCity(registerCity);
         log.info("Saving City={} in DB", city);

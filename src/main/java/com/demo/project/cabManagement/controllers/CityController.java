@@ -30,8 +30,4 @@ public class CityController {
         return ResponseEntity.status(HttpStatus.OK).body("City registered successfully");
     }
 
-
-
-
-
 }
